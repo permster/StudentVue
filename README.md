@@ -18,7 +18,7 @@ sv = StudentVue('username', 'password', 'domain name')
 
 ## Documentation
 
-See main.py for additional example usage.
+See main.py for additional example usage.  Main.py StudentVue credentials are stored in local_settings.py.  See example file `sample_local_settings.py`.
 
 The API data is in XML format, so the data is automatically transformed into json using [xmljson](https://github.com/sanand0/xmljson). You can configure the transformation convention using the `xmljson_serializer` parameter.
 
