@@ -24,4 +24,4 @@ The API data is in XML format, so the data is automatically transformed into jso
 
 ## Bugs and Contributing
 
-Different districts may be running incompatible versions of StudentVue. If you find such an instance or to make general improvements, feel free to [raise a new issue](https://github.com/kajchang/StudentVue/issues/new) and/or [open a pull request](https://github.com/kajchang/StudentVue/compare).
+Different districts may be running incompatible versions of StudentVue. If you find such an instance or to make general improvements, feel free to [raise a new issue](https://github.com/permster/StudentVue/issues/new) and/or [open a pull request](https://github.com/permster/StudentVue/compare).
