@@ -1,5 +1,4 @@
-import os
-import base64
+from studentvue import helpers
 
 
 class Student:
@@ -32,6 +31,13 @@ class Student:
 
         # Set child id for later calls to StudentVue
         self._sv.switch_student(self.agu)
+
+        # Set class schedule
+        self.set_student_schedule()
+
+        # Set grades/assignments
+        self.set_student_grades()
+        self.set_student_assignments()
 
     def get_student_by_firstname(self, firstname):
         studentlist = self._sv.get_student_list()['ChildList']['Child']
@@ -66,11 +72,7 @@ class Student:
         return self._sv_student['OrganizationName']['$']
 
     def get_student_image(self, filename):
-        imgdata = base64.b64decode(self._sv_student['photo']['$'])
-        filename = f'{filename}.png'
-        with open(filename, 'wb') as f:
-            f.write(imgdata)
-        return os.path.realpath(f.name)
+        return helpers.base64ToFile(self._sv_student['photo']['$'], f'{filename}.png')
 
     def set_student_schedule(self):
         schedule = self._sv.get_schedule()['StudentClassSchedule']
@@ -126,24 +128,29 @@ class Student:
             ])
         self.assignments = assignments_temp
 
-    def get_missing_assignments(self, classname: str = None, period: int = None):
-        if classname and period:
-            return
-
+    def get_missing_assignments(self, classname: str = None, period: int = None,
+                                time: str = None
+                                ):
         missing_assignments = []
         for assignments in self.assignments:
+            # classname param found but class name is not a match
             if classname is not None and assignments[1] != classname:
                 continue
 
+            # period param found but period is not a match
             if period is not None and assignments[0] != period:
                 continue
 
             missing_assignment = []
             for assignment in assignments[2]:
                 if assignment[6].startswith('0.00') or 'missing' in assignment[7].lower():
-                    missing_assignment.append(
-                        assignment
-                    )
+                    if time:
+                        # do time comparison here
+                        if helpers.convert_string_to_date(assignment[2]) >= \
+                                helpers.now_timedelta_to_date(time):  # need to confirm index of 2 for date
+                            missing_assignment.append(assignment)
+                    else:
+                        missing_assignment.append(assignment)
             missing_assignments.append([
                 assignments[0],
                 assignments[1],
