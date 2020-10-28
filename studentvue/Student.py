@@ -146,8 +146,8 @@ class Student:
                 if assignment[6].startswith('0.00') or 'missing' in assignment[7].lower():
                     if time:
                         # do time comparison here
-                        if helpers.convert_string_to_date(assignment[2]) >= \
-                                helpers.now_timedelta_to_date(time):  # need to confirm index of 2 for date
+                        if helpers.convert_string_to_date(assignment[0]) >= \
+                                helpers.now_timedelta_to_date(time):
                             missing_assignment.append(assignment)
                     else:
                         missing_assignment.append(assignment)

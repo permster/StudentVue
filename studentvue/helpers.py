@@ -60,4 +60,4 @@ def now_timedelta_to_date(time_val):
 
 
 def convert_string_to_date(date):
-    return datetime.strptime(date, '%M/%d/%Y')
+    return datetime.strptime(date, '%m/%d/%Y')
