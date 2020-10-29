@@ -128,9 +128,7 @@ class Student:
             ])
         self.assignments = assignments_temp
 
-    def get_missing_assignments(self, classname: str = None, period: int = None,
-                                time: str = None
-                                ):
+    def get_missing_assignments(self, classname: str = None, period: int = None, time: str = None):
         missing_assignments = []
         for assignments in self.assignments:
             # classname param found but class name is not a match
@@ -151,10 +149,12 @@ class Student:
                             missing_assignment.append(assignment)
                     else:
                         missing_assignment.append(assignment)
-            missing_assignments.append([
-                assignments[0],
-                assignments[1],
-                missing_assignment
-            ])
+
+            if len(missing_assignment) > 0:
+                missing_assignments.append([
+                    assignments[0],
+                    assignments[1],
+                    missing_assignment
+                ])
 
         return missing_assignments

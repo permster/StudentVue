@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 
 
 def base64ToFile(strBase64, fileName):
@@ -27,10 +28,13 @@ def convert_to_timedelta(time_val):
     h           Hours   '24h' -> 24 Hours
     d           Days    '7d'  -> 7 Days
     w           Weeks   '2w'  -> 2 Weeks
+    M           Months   '2M'  -> 2 Months
     =========   ======= ===================
 
     Examples::
 
+        >>> convert_to_timedelta('2M')
+        datetime.timedelta(61)
         >>> convert_to_timedelta('3w')
         datetime.timedelta(21)
         >>> convert_to_timedelta('7d')
@@ -53,6 +57,8 @@ def convert_to_timedelta(time_val):
         return timedelta(days=num)
     elif time_val.endswith('w'):
         return timedelta(weeks=num)
+    elif time_val.endswith('M'):
+        return relativedelta(months=num)
 
 
 def now_timedelta_to_date(time_val):
