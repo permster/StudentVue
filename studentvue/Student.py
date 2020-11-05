@@ -78,83 +78,69 @@ class Student:
         schedule = self._sv.get_schedule()['StudentClassSchedule']
         courses = []
         for course in schedule['ClassLists']['ClassListing']:
-            courses.append([
-                course['@Period'],
-                course['@CourseTitle'],
-                course['@RoomName'],
-                course['@Teacher'],
-                course['@TeacherEmail']
-            ])
+            course_temp = {'Period': course['@Period'], 'Classname': course['@CourseTitle'],
+                           'RoomName': course['@RoomName'], 'Teacher': course['@Teacher'],
+                           'TeacherEmail': course['@TeacherEmail']}
+            courses.append(course_temp)
         self.schedule = courses
 
     def set_student_grades(self):
         grades = self._sv.get_gradebook()['Gradebook']['Courses']['Course']
         grades_temp = []
         for grade in grades:
-            grades_temp.append([
-                grade['@Period'],
-                grade['@Title'],
-                grade['@Room'],
-                grade['@Staff'],
-                grade['@StaffEMail'],
-                grade['Marks']['Mark']['@CalculatedScoreString'],
-                grade['Marks']['Mark']['@CalculatedScoreRaw']
-            ])
+            grade_temp = {'Period': grade['@Period'], 'Classname': grade['@Title'],
+                          'Grade': grade['Marks']['Mark']['@CalculatedScoreString'],
+                          'Score': grade['Marks']['Mark']['@CalculatedScoreRaw']}
+            grades_temp.append(grade_temp)
         self.grades = grades_temp
 
     def set_student_assignments(self):
         grades = self._sv.get_gradebook()['Gradebook']['Courses']['Course']
         assignments_temp = []
         for grade in grades:
-            assignment_temp = []
+            grade_temp = {'Period': grade['@Period'], 'Classname': grade['@Title'],
+                          'Assignments': []}
+
             for assignment in grade['Marks']['Mark']['Assignments']['Assignment']:
-                assignment_temp.append([
-                    assignment['@Date'],
-                    assignment['@DueDate'],
-                    assignment['@Measure'],
-                    assignment['@Type'],
-                    assignment['@Score'],
-                    assignment['@ScoreType'],
-                    assignment['@Points'],
-                    assignment['@Notes'],
-                    assignment['@HasDropBox'],
-                    assignment['@DropStartDate'],
-                    assignment['@DropEndDate']
-                ])
-            assignments_temp.append([
-                grade['@Period'],
-                grade['@Title'],
-                assignment_temp
-            ])
+                assignment_temp = {'Date': assignment['@Date'], 'DueDate': assignment['@DueDate'],
+                                   'Measure': assignment['@Measure'], 'Type': assignment['@Type'],
+                                   'Score': assignment['@Score'], 'ScoreType': assignment['@ScoreType'],
+                                   'Points': assignment['@Points'], 'Notes': assignment['@Notes'],
+                                   'HasDropBox': assignment['@HasDropBox'],
+                                   'DropStartDate': assignment['@DropStartDate'],
+                                   'DropEndDate': assignment['@DropEndDate']}
+
+                grade_temp['Assignments'].append(assignment_temp)
+            assignments_temp.append(grade_temp)
         self.assignments = assignments_temp
 
     def get_missing_assignments(self, classname: str = None, period: int = None, time: str = None):
         missing_assignments = []
-        for assignments in self.assignments:
+        for course in self.assignments:
             # classname param found but class name is not a match
-            if classname is not None and assignments[1] != classname:
+            if classname is not None and course['Classname'] != classname:
                 continue
 
             # period param found but period is not a match
-            if period is not None and assignments[0] != period:
+            if period is not None and course['Period'] != period:
                 continue
 
             missing_assignment = []
-            for assignment in assignments[2]:
-                if assignment[6].startswith('0.00') or 'missing' in assignment[7].lower():
+            for assignment in course['Assignments']:
+                if assignment['Points'].startswith('0.00') or 'missing' in assignment['Notes'].lower():
                     if time:
                         # do time comparison here
-                        if helpers.convert_string_to_date(assignment[0]) >= \
+                        if helpers.convert_string_to_date(assignment['Date']) >= \
                                 helpers.now_timedelta_to_date(time):
                             missing_assignment.append(assignment)
                     else:
                         missing_assignment.append(assignment)
 
             if len(missing_assignment) > 0:
-                missing_assignments.append([
-                    assignments[0],
-                    assignments[1],
-                    missing_assignment
-                ])
+                missing_assignments.append({
+                    'Period': course['Period'],
+                    'Classname': course['Classname'],
+                    'Assignments': missing_assignment
+                })
 
         return missing_assignments
