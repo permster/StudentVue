@@ -9,7 +9,7 @@ class Student:
         self.schedule = self.grades = self.assignments = self._sv = None
         self.schooldistrict = self.assignments_missing = None
 
-        if not firstname and not childintid:
+        if firstname is None and childintid is None:
             raise ValueError("No firstname or childintid parameter was specified.")
 
         # StudentVue instance
@@ -161,7 +161,7 @@ class Student:
                     'Assignments': missing_assignment
                 })
 
-        if notify:
+        if notify and len(missing_assignments) > 0:
             body = helpers.convert_assignments_to_html(missing_assignments)
             helpers.send_notifications(f"{self.get_firstname()} has {len(missing_assignments)}"
                                        f" missing assignment(s)", body)
