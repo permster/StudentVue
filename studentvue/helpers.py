@@ -1,14 +1,81 @@
 import os
+import local_settings
+from studentvue import notifications, logger
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
 
-def base64ToFile(strBase64, fileName):
-    import base64
-    fileDecoded = base64.b64decode(strBase64)
+def send_notifications(title, message):
+    if local_settings.email_enabled:
+        logger.info(u"Sending Email notification")
+        email = notifications.Email()
+        email.notify(title, message)
+    if local_settings.pushbullet_enabled:
+        logger.info(u"Sending PushBullet notification")
+        pushbullet = notifications.PUSHBULLET()
+        pushbullet.notify(title, message)
+    if local_settings.pushover_enabled:
+        logger.info(u"Sending Pushover notification")
+        prowl = notifications.PUSHOVER()
+        prowl.notify(title, message)
+    if local_settings.join_enabled:
+        logger.info(u"Sending Join notification")
+        join = notifications.JOIN()
+        join.notify(title, message)
 
-    file = open(fileName, "wb")
-    file.write(fileDecoded)
+
+def convert_assignments_to_html(assignments):
+    body = ""
+    for course in assignments:
+        # Start body
+        body += f'<p>\n<span style="font-weight:bold;">{course["Classname"]}</span>\n'
+        body += '<table>\n<tr>'
+
+        # Add header row to table
+        for key in course['Assignments'][0].keys():
+            body += f'<th valign="top">{key}</th>\n'
+
+        # End header row
+        body += '</tr>\n'
+
+        # Populate table rows
+        for assignment in course['Assignments']:
+            # Start row
+            body += '<tr>\n'
+
+            # Loop through assignments
+            for value in assignment.values():
+                body += f'<td valign="top">{value}</td>\n'
+
+            # End row
+            body += '</tr>\n'
+
+        # End table
+        body += '</table>\n</p>'
+
+    html = f"""\
+    <html>
+        <style>
+        table, th, td {{
+          border: 1px solid black;
+          border-collapse: collapse;
+        }}
+        </style>
+      <body>
+        {body}
+      </body>
+    </html>
+    """
+
+    return html
+
+
+def base64tofile(strbase64, filename):
+    import base64
+    filedecoded = base64.b64decode(strbase64)
+
+    file = open(filename, "wb")
+    file.write(filedecoded)
     file.close()
 
     return os.path.realpath(file.name)

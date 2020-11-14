@@ -7,7 +7,7 @@ class Student:
         self.permid = self.schoolname = self.image = self.agu = None
         self.studentdict = self.firstname = self.fullname = None
         self.schedule = self.grades = self.assignments = self._sv = None
-        self.schooldistrict = None
+        self.schooldistrict = self.assignments_missing = None
 
         if not firstname and not childintid:
             raise ValueError("No firstname or childintid parameter was specified.")
@@ -38,6 +38,7 @@ class Student:
         # Set grades/assignments
         self.set_student_grades()
         self.set_student_assignments()
+        self.set_missing_assignments()
 
     def get_student_by_firstname(self, firstname):
         studentlist = self._sv.get_student_list()['ChildList']['Child']
@@ -72,7 +73,7 @@ class Student:
         return self._sv_student['OrganizationName']['$']
 
     def get_student_image(self, filename):
-        return helpers.base64ToFile(self._sv_student['photo']['$'], f'{filename}.png')
+        return helpers.base64tofile(self._sv_student['photo']['$'], f'{filename}.png')
 
     def set_student_schedule(self):
         schedule = self._sv.get_schedule()['StudentClassSchedule']
@@ -89,8 +90,8 @@ class Student:
         grades_temp = []
         for grade in grades:
             grade_temp = {'Period': grade['@Period'], 'Classname': grade['@Title'],
-                          'Grade': grade['Marks']['Mark']['@CalculatedScoreString'],
-                          'Score': grade['Marks']['Mark']['@CalculatedScoreRaw']}
+                          'Grade': grade['Marks']['Mark'][0]['@CalculatedScoreString'],
+                          'Score': grade['Marks']['Mark'][0]['@CalculatedScoreRaw']}
             grades_temp.append(grade_temp)
         self.grades = grades_temp
 
@@ -101,7 +102,7 @@ class Student:
             grade_temp = {'Period': grade['@Period'], 'Classname': grade['@Title'],
                           'Assignments': []}
 
-            for assignment in grade['Marks']['Mark']['Assignments']['Assignment']:
+            for assignment in grade['Marks']['Mark'][0]['Assignments']['Assignment']:
                 assignment_temp = {'Date': assignment['@Date'], 'DueDate': assignment['@DueDate'],
                                    'Measure': assignment['@Measure'], 'Type': assignment['@Type'],
                                    'Score': assignment['@Score'], 'ScoreType': assignment['@ScoreType'],
@@ -114,9 +115,27 @@ class Student:
             assignments_temp.append(grade_temp)
         self.assignments = assignments_temp
 
-    def get_missing_assignments(self, classname: str = None, period: int = None, time: str = None):
+    def set_missing_assignments(self):
         missing_assignments = []
         for course in self.assignments:
+            missing_assignment = []
+            for assignment in course['Assignments']:
+                if assignment['Points'].startswith('0.00'):
+                    missing_assignment.append(assignment)
+
+            if len(missing_assignment) > 0:
+                missing_assignments.append({
+                    'Period': course['Period'],
+                    'Classname': course['Classname'],
+                    'Assignments': missing_assignment
+                })
+
+        self.assignments_missing = missing_assignments
+
+    def get_missing_assignments(self, classname: str = None, period: int = None,
+                                time: str = None, notify: bool = False):
+        missing_assignments = []
+        for course in self.assignments_missing:
             # classname param found but class name is not a match
             if classname is not None and course['Classname'] != classname:
                 continue
@@ -127,14 +146,13 @@ class Student:
 
             missing_assignment = []
             for assignment in course['Assignments']:
-                if assignment['Points'].startswith('0.00') or 'missing' in assignment['Notes'].lower():
-                    if time:
-                        # do time comparison here
-                        if helpers.convert_string_to_date(assignment['Date']) >= \
-                                helpers.now_timedelta_to_date(time):
-                            missing_assignment.append(assignment)
-                    else:
+                if time:
+                    # do time comparison here
+                    if helpers.convert_string_to_date(assignment['Date']) >= \
+                            helpers.now_timedelta_to_date(time):
                         missing_assignment.append(assignment)
+                else:
+                    missing_assignment.append(assignment)
 
             if len(missing_assignment) > 0:
                 missing_assignments.append({
@@ -143,4 +161,8 @@ class Student:
                     'Assignments': missing_assignment
                 })
 
+        if notify:
+            body = helpers.convert_assignments_to_html(missing_assignments)
+            helpers.send_notifications(f"{self.get_firstname()} has {len(missing_assignments)}"
+                                       f" missing assignment(s)", body)
         return missing_assignments
