@@ -74,6 +74,8 @@ def base64tofile(strbase64, filename):
     import base64
     filedecoded = base64.b64decode(strbase64)
 
+    if not os.path.isabs(filename):
+        filename = f'{os.path.dirname(os.path.realpath(__file__))}//{filename}'
     file = open(filename, "wb")
     file.write(filedecoded)
     file.close()
