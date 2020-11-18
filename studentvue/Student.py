@@ -120,7 +120,7 @@ class Student:
         for course in self.assignments:
             missing_assignment = []
             for assignment in course['Assignments']:
-                if assignment['Points'].startswith('0.00'):
+                if assignment['Points'].startswith('0.00') and assignment['Score'] != "Not Graded":
                     missing_assignment.append(assignment)
 
             if len(missing_assignment) > 0:
