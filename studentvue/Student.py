@@ -135,6 +135,7 @@ class Student:
     def get_missing_assignments(self, classname: str = None, period: int = None,
                                 time: str = None, notify: bool = False):
         missing_assignments = []
+        missing_count = 0
         for course in self.assignments_missing:
             # classname param found but class name is not a match
             if classname is not None and course['Classname'] != classname:
@@ -151,6 +152,7 @@ class Student:
                     if helpers.convert_string_to_date(assignment['Date']) >= \
                             helpers.now_timedelta_to_date(time):
                         missing_assignment.append(assignment)
+                        missing_count += 1
                 else:
                     missing_assignment.append(assignment)
 
@@ -163,6 +165,6 @@ class Student:
 
         if notify and len(missing_assignments) > 0:
             body = helpers.convert_assignments_to_html(missing_assignments)
-            helpers.send_notifications(f"{self.get_firstname()} has {len(missing_assignments)}"
+            helpers.send_notifications(f"{self.get_firstname()} has {missing_count}"
                                        f" missing assignment(s)", body)
         return missing_assignments
