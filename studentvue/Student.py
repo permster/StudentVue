@@ -90,8 +90,8 @@ class Student:
         grades_temp = []
         for grade in grades:
             grade_temp = {'Period': grade['@Period'], 'Classname': grade['@Title'],
-                          'Grade': grade['Marks']['Mark'][0]['@CalculatedScoreString'],
-                          'Score': grade['Marks']['Mark'][0]['@CalculatedScoreRaw']}
+                          'Grade': grade['Marks']['Mark']['@CalculatedScoreString'],
+                          'Score': grade['Marks']['Mark']['@CalculatedScoreRaw']}
             grades_temp.append(grade_temp)
         self.grades = grades_temp
 
@@ -102,17 +102,18 @@ class Student:
             grade_temp = {'Period': grade['@Period'], 'Classname': grade['@Title'],
                           'Assignments': []}
 
-            for assignment in grade['Marks']['Mark'][0]['Assignments']['Assignment']:
-                assignment_temp = {'Date': assignment['@Date'], 'DueDate': assignment['@DueDate'],
-                                   'Measure': assignment['@Measure'], 'Type': assignment['@Type'],
-                                   'Score': assignment['@Score'], 'ScoreType': assignment['@ScoreType'],
-                                   'Points': assignment['@Points'], 'Notes': assignment['@Notes'],
-                                   'HasDropBox': assignment['@HasDropBox'],
-                                   'DropStartDate': assignment['@DropStartDate'],
-                                   'DropEndDate': assignment['@DropEndDate']}
+            if len(grade['Marks']['Mark']['Assignments']) > 0:
+                for assignment in grade['Marks']['Mark']['Assignments']['Assignment']:
+                    assignment_temp = {'Date': assignment['@Date'], 'DueDate': assignment['@DueDate'],
+                                       'Measure': assignment['@Measure'], 'Type': assignment['@Type'],
+                                       'Score': assignment['@Score'], 'ScoreType': assignment['@ScoreType'],
+                                       'Points': assignment['@Points'], 'Notes': assignment['@Notes'],
+                                       'HasDropBox': assignment['@HasDropBox'],
+                                       'DropStartDate': assignment['@DropStartDate'],
+                                       'DropEndDate': assignment['@DropEndDate']}
 
-                grade_temp['Assignments'].append(assignment_temp)
-            assignments_temp.append(grade_temp)
+                    grade_temp['Assignments'].append(assignment_temp)
+                assignments_temp.append(grade_temp)
         self.assignments = assignments_temp
 
     def set_missing_assignments(self):
