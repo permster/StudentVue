@@ -123,7 +123,7 @@ class Student:
             for assignment in course['Assignments']:
                 if assignment['Points'].startswith('0.00') and \
                         not assignment['Points'].endswith('/ 0.0000') and \
-                        assignment['Score'] != "Not Graded":
+                        assignment['Score'] != "Not Graded" and assignment['Score'] != "Not Due":
                     missing_assignment.append(assignment)
 
             if len(missing_assignment) > 0:
@@ -169,5 +169,5 @@ class Student:
         if notify and len(missing_assignments) > 0:
             body = helpers.convert_assignments_to_html(missing_assignments)
             helpers.send_notifications(f"{self.get_firstname()} has {missing_count}"
-                                       f" missing assignment(s)", body)
+                                       f" missing assignment(s)", body, self.agu)
         return missing_assignments

@@ -5,11 +5,16 @@ from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
 
-def send_notifications(title, message):
+def send_notifications(title, message, agu):
     if local_settings.email_enabled:
         logger.info(u"Sending Email notification")
+        email_to = local_settings.email_to
+        if local_settings.email_child:
+            child_email = getattr(local_settings, f'email_child_to_agu{agu}')
+            if len(child_email) > 0:
+                email_to += "," + child_email
         email = notifications.Email()
-        email.notify(title, message)
+        email.notify(email_to, title, message)
     if local_settings.pushbullet_enabled:
         logger.info(u"Sending PushBullet notification")
         pushbullet = notifications.PUSHBULLET()

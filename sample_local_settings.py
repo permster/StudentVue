@@ -20,3 +20,6 @@ email_smtp_port = 587
 email_tls = True
 email_smtp_user = "test"
 email_smtp_password = "<app password if using gmail>"
+email_child = True
+email_child_to_agu0 = "timmy@gmail.com"
+email_child_to_agu1 = "trixie@gmail.com"

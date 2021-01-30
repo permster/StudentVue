@@ -122,7 +122,7 @@ class PUSHOVER(object):
 
 
 class Email(object):
-    def notify(self, subject, body):
+    def notify(self, to, subject, body):
         """Send out our HTML email"""
 
         # message = MIMEMultipart('alternative')
@@ -131,7 +131,7 @@ class Email(object):
         message['Subject'] = subject
         message['From'] = email.utils.formataddr(
             ('Studentvue', local_settings.email_from))
-        message['To'] = local_settings.email_to
+        message['To'] = to
         message['Date'] = email.utils.formatdate(localtime=True)
         message.preamble = "Preamble"
         message.attach(html_body)
