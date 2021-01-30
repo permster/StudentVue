@@ -152,12 +152,14 @@ class Student:
             for assignment in course['Assignments']:
                 if time:
                     # do time comparison here
-                    if helpers.convert_string_to_date(assignment['Date']) >= \
-                            helpers.now_timedelta_to_date(time):
+                    assignment_date = helpers.convert_string_to_date(assignment['Date'])
+                    date_cutoff = helpers.now_timedelta_to_date(time)
+                    if assignment_date >= date_cutoff:
                         missing_assignment.append(assignment)
                         missing_count += 1
                 else:
                     missing_assignment.append(assignment)
+                    missing_count += 1
 
             if len(missing_assignment) > 0:
                 missing_assignments.append({

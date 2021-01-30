@@ -10,7 +10,8 @@ students = sv.get_student_list()['ChildList']['Child']
 
 for stu in students:
     student = Student.Student(studentvue=sv, childintid=stu['@AccessGU'])
-    student.get_missing_assignments(time='7d', notify=True)  # Specific time period
+    # student.get_missing_assignments(time='7d', notify=True)  # Specific time period
+    student.get_missing_assignments(notify=True)
 
 # New student instance (by first name instead of id)
 # student = Student.Student(studentvue=sv, firstname="Jonathan")
