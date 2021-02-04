@@ -103,16 +103,27 @@ class Student:
                           'Assignments': []}
 
             if len(grade['Marks']['Mark']['Assignments']) > 0:
-                for assignment in grade['Marks']['Mark']['Assignments']['Assignment']:
-                    assignment_temp = {'Date': assignment['@Date'], 'DueDate': assignment['@DueDate'],
-                                       'Measure': assignment['@Measure'], 'Type': assignment['@Type'],
-                                       'Score': assignment['@Score'], 'ScoreType': assignment['@ScoreType'],
-                                       'Points': assignment['@Points'], 'Notes': assignment['@Notes'],
-                                       'HasDropBox': assignment['@HasDropBox'],
-                                       'DropStartDate': assignment['@DropStartDate'],
-                                       'DropEndDate': assignment['@DropEndDate']}
-
+                assignments = grade['Marks']['Mark']['Assignments']['Assignment']
+                if isinstance(assignments, dict):  # Workaround for xmltojson conversion issue (single element)
+                    assignment_temp = {'Date': assignments['@Date'], 'DueDate': assignments['@DueDate'],
+                                       'Measure': assignments['@Measure'], 'Type': assignments['@Type'],
+                                       'Score': assignments['@Score'], 'ScoreType': assignments['@ScoreType'],
+                                       'Points': assignments['@Points'], 'Notes': assignments['@Notes'],
+                                       'HasDropBox': assignments['@HasDropBox'],
+                                       'DropStartDate': assignments['@DropStartDate'],
+                                       'DropEndDate': assignments['@DropEndDate']}
                     grade_temp['Assignments'].append(assignment_temp)
+                else:
+                    for assignment in assignments:
+                        assignment_temp = {'Date': assignment['@Date'], 'DueDate': assignment['@DueDate'],
+                                           'Measure': assignment['@Measure'], 'Type': assignment['@Type'],
+                                           'Score': assignment['@Score'], 'ScoreType': assignment['@ScoreType'],
+                                           'Points': assignment['@Points'], 'Notes': assignment['@Notes'],
+                                           'HasDropBox': assignment['@HasDropBox'],
+                                           'DropStartDate': assignment['@DropStartDate'],
+                                           'DropEndDate': assignment['@DropEndDate']}
+
+                        grade_temp['Assignments'].append(assignment_temp)
                 assignments_temp.append(grade_temp)
         self.assignments = assignments_temp
 
