@@ -106,14 +106,17 @@ class StudentVue:
         """
         return self._xml_json_serialize(self._make_service_request('Attendance'))
 
-    def get_gradebook(self, report_period: int = 4) -> OrderedDict:
+    def get_gradebook(self, report_period: int = None) -> OrderedDict:
         """
         :param report_period: (optional) report period to fetch gradebook for
         :type report_period: int
         :return: student's gradebook for the specified report period
         :rtype: OrderedDict
         """
-        params = {'ReportPeriod': report_period}
+        params = {}
+
+        if report_period is not None:
+            params['ReportPeriod'] = report_period
 
         return self._xml_json_serialize(self._make_service_request('Gradebook', **params))
 

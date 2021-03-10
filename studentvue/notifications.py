@@ -157,7 +157,7 @@ class Email(object):
                                  local_settings.email_smtp_password)
 
             mailserver.sendmail(local_settings.email_from,
-                                local_settings.email_to.split(','),
+                                to.split(','),
                                 message.as_string())
 
             mailserver.quit()

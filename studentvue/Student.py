@@ -1,6 +1,67 @@
 from studentvue import helpers
 
 
+def assignments_to_dictionary(dic):
+    return {'Date': dic['@Date'], 'DueDate': dic['@DueDate'],
+            'Measure': dic['@Measure'], 'Type': dic['@Type'],
+            'Score': dic['@Score'], 'ScoreType': dic['@ScoreType'],
+            'Points': dic['@Points'], 'Notes': dic['@Notes'],
+            'HasDropBox': dic['@HasDropBox'],
+            'DropStartDate': dic['@DropStartDate'],
+            'DropEndDate': dic['@DropEndDate']}
+
+
+def parse_assignments(grades, term):
+    gradebook = grades['Gradebook']['Courses']['Course']
+    assignments_temp = []
+    for grade in gradebook:
+        grade_temp = {'Period': grade['@Period'], 'Classname': grade['@Title'], 'Assignments': []}
+
+        marks = grade['Marks']['Mark']
+        if isinstance(marks, dict):
+            # Progress report
+            if len(marks['Assignments']) > 0:
+                assignments = marks['Assignments']['Assignment']
+                if isinstance(assignments, dict):  # Workaround for xmltojson conversion issue (single element)
+                    grade_temp['Assignments'].append(assignments_to_dictionary(assignments))
+                else:
+                    for assignment in assignments:
+                        grade_temp['Assignments'].append(assignments_to_dictionary(assignment))
+        else:
+            # Term
+            for mark in marks:
+                if mark['@MarkName'] == term and len(mark['Assignments']) > 0:
+                    assignments = mark['Assignments']['Assignment']
+                    if isinstance(assignments, dict):  # Workaround for xmltojson conversion issue (single element)
+                        grade_temp['Assignments'].append(assignments_to_dictionary(assignments))
+                    else:
+                        for assignment in assignments:
+                            grade_temp['Assignments'].append(assignments_to_dictionary(assignment))
+        assignments_temp.append(grade_temp)
+    return assignments_temp
+
+
+def grades_to_list(grades, term):
+    gradebook = grades['Gradebook']['Courses']['Course']
+    grades_temp = []
+    for grade in gradebook:
+        marks = grade['Marks']['Mark']
+        if isinstance(marks, dict):
+            # Progress report
+            grades_temp.append({'Period': grade['@Period'], 'Classname': grade['@Title'],
+                                'Grade': marks['@CalculatedScoreString'],
+                                'Score': marks['@CalculatedScoreRaw']})
+        else:
+            # Term
+            for mark in marks:
+                if mark['@MarkName'] == term:
+                    grades_temp.append({'Period': grade['@Period'], 'Classname': grade['@Title'],
+                                        'Grade': mark['@CalculatedScoreString'],
+                                        'Score': mark['@CalculatedScoreRaw']})
+                    break
+    return grades_temp
+
+
 class Student:
 
     def __init__(self, studentvue, firstname=None, childintid=None):
@@ -8,6 +69,7 @@ class Student:
         self.studentdict = self.firstname = self.fullname = None
         self.schedule = self.grades = self.assignments = self._sv = None
         self.schooldistrict = self.assignments_missing = None
+        self.gradeterm = self.assignmentterm = None
 
         if firstname is None and childintid is None:
             raise ValueError("No firstname or childintid parameter was specified.")
@@ -75,8 +137,8 @@ class Student:
     def get_student_image(self, filename):
         return helpers.base64tofile(self._sv_student['photo']['$'], f'{filename}.png')
 
-    def set_student_schedule(self):
-        schedule = self._sv.get_schedule()['StudentClassSchedule']
+    def set_student_schedule(self, term_index: int = None):
+        schedule = self._sv.get_schedule(term_index)['StudentClassSchedule']
         courses = []
         for course in schedule['ClassLists']['ClassListing']:
             course_temp = {'Period': course['@Period'], 'Classname': course['@CourseTitle'],
@@ -85,47 +147,43 @@ class Student:
             courses.append(course_temp)
         self.schedule = courses
 
-    def set_student_grades(self):
-        grades = self._sv.get_gradebook()['Gradebook']['Courses']['Course']
-        grades_temp = []
-        for grade in grades:
-            grade_temp = {'Period': grade['@Period'], 'Classname': grade['@Title'],
-                          'Grade': grade['Marks']['Mark']['@CalculatedScoreString'],
-                          'Score': grade['Marks']['Mark']['@CalculatedScoreRaw']}
-            grades_temp.append(grade_temp)
-        self.grades = grades_temp
+    def set_student_grades(self, report_period: int = None, all_periods: bool = False):
+        #   If you specify a term report_period (1, 3, 5, 7) then grades can be found here:
+        #       grades['Gradebook']['Courses']['Course'][0]['Marks']['Mark'][0]['Assignments']['Assignment']
+        #   If you specify a progress report report_period (0, 2, 4, 6) then grades can be found here:
+        #       grades['Gradebook']['Courses']['Course'][0]['Marks']['Mark']['Assignments']['Assignment']
+        #   If you don't specify a report_period (None) the period is set to the current term:
+        #       grades['Gradebook']['Courses']['Course'][0]['Marks']['Mark'][0]['Assignments']['Assignment']
+        #   If you specify a report_period of term 4 (7) the period is set to term 4 but it only shows the current
+        #   terms grades.  So if it's only term 2 currently it will say term 4 but will show the grades for term 2.
+        if all_periods:
+            grades = self._sv.get_gradebook(report_period=3)
+            self.gradeterm = grades['Gradebook']['ReportingPeriod']['@GradePeriod']
+            term2_grades = grades_to_list(grades, term=self.gradeterm)
 
-    def set_student_assignments(self):
-        grades = self._sv.get_gradebook()['Gradebook']['Courses']['Course']
-        assignments_temp = []
-        for grade in grades:
-            grade_temp = {'Period': grade['@Period'], 'Classname': grade['@Title'],
-                          'Assignments': []}
+            grades = self._sv.get_gradebook(report_period=7)
+            self.gradeterm = grades['Gradebook']['ReportingPeriod']['@GradePeriod']
+            term4_grades = grades_to_list(grades, term=self.gradeterm)
+            self.grades = term2_grades + term4_grades
+        else:
+            grades = self._sv.get_gradebook(report_period)
+            self.gradeterm = grades['Gradebook']['ReportingPeriod']['@GradePeriod']
+            self.grades = grades_to_list(grades, term=self.gradeterm)
 
-            if len(grade['Marks']['Mark']['Assignments']) > 0:
-                assignments = grade['Marks']['Mark']['Assignments']['Assignment']
-                if isinstance(assignments, dict):  # Workaround for xmltojson conversion issue (single element)
-                    assignment_temp = {'Date': assignments['@Date'], 'DueDate': assignments['@DueDate'],
-                                       'Measure': assignments['@Measure'], 'Type': assignments['@Type'],
-                                       'Score': assignments['@Score'], 'ScoreType': assignments['@ScoreType'],
-                                       'Points': assignments['@Points'], 'Notes': assignments['@Notes'],
-                                       'HasDropBox': assignments['@HasDropBox'],
-                                       'DropStartDate': assignments['@DropStartDate'],
-                                       'DropEndDate': assignments['@DropEndDate']}
-                    grade_temp['Assignments'].append(assignment_temp)
-                else:
-                    for assignment in assignments:
-                        assignment_temp = {'Date': assignment['@Date'], 'DueDate': assignment['@DueDate'],
-                                           'Measure': assignment['@Measure'], 'Type': assignment['@Type'],
-                                           'Score': assignment['@Score'], 'ScoreType': assignment['@ScoreType'],
-                                           'Points': assignment['@Points'], 'Notes': assignment['@Notes'],
-                                           'HasDropBox': assignment['@HasDropBox'],
-                                           'DropStartDate': assignment['@DropStartDate'],
-                                           'DropEndDate': assignment['@DropEndDate']}
+    def set_student_assignments(self, report_period: int = None, all_periods: bool = False):
+        if all_periods:
+            grades = self._sv.get_gradebook(report_period=3)
+            self.assignmentterm = grades['Gradebook']['ReportingPeriod']['@GradePeriod']
+            term2_grades = parse_assignments(grades, term=self.assignmentterm)
 
-                        grade_temp['Assignments'].append(assignment_temp)
-                assignments_temp.append(grade_temp)
-        self.assignments = assignments_temp
+            grades = self._sv.get_gradebook(report_period=7)
+            self.assignmentterm = grades['Gradebook']['ReportingPeriod']['@GradePeriod']
+            term4_grades = parse_assignments(grades, term=self.assignmentterm)
+            self.assignments = term2_grades + term4_grades
+        else:
+            grades = self._sv.get_gradebook(report_period)
+            self.assignmentterm = grades['Gradebook']['ReportingPeriod']['@GradePeriod']
+            self.assignments = parse_assignments(grades, term=self.assignmentterm)
 
     def set_missing_assignments(self):
         missing_assignments = []

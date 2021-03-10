@@ -33,7 +33,8 @@ def convert_assignments_to_html(assignments):
     body = ""
     for course in assignments:
         # Start body
-        body += f'<p>\n<span style="font-weight:bold;">{course["Classname"]}</span>\n'
+        body += f'<p>\n<span style="font-weight:bold;">{course["Classname"]} - {len(course["Assignments"])} missing' \
+                f'</span>\n '
         body += '<table>\n<tr>'
 
         # Add header row to table
