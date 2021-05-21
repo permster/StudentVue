@@ -1,5 +1,8 @@
 from studentvue import helpers
+from datetime import datetime
 
+
+date_format = "%m/%d/%Y"
 
 def assignments_to_dictionary(dic):
     return {'Date': dic['@Date'], 'DueDate': dic['@DueDate'],
@@ -64,12 +67,16 @@ def grades_to_list(grades, term):
 
 class Student:
 
-    def __init__(self, studentvue, firstname=None, childintid=None):
+    def __init__(self, studentvue, firstname=None, childintid=None, termindex=None, reportperiod=None):
         self.permid = self.schoolname = self.image = self.agu = None
         self.studentdict = self.firstname = self.fullname = None
         self.schedule = self.grades = self.assignments = self._sv = None
         self.schooldistrict = self.assignments_missing = None
-        self.gradeterm = self.assignmentterm = None
+        self.gradeterm = self.gradetermname = None
+        self.reportingperiodname = None
+        self.schoolbegin = self.schoolend = self.isschoolyear = None
+        self.gradetermindex = termindex
+        self.reportingperiodindex = reportperiod
 
         if firstname is None and childintid is None:
             raise ValueError("No firstname or childintid parameter was specified.")
@@ -94,12 +101,25 @@ class Student:
         # Set child id for later calls to StudentVue
         self._sv.switch_student(self.agu)
 
+        # Set school year dates
+        self.schoolbegin, self.schoolend = self.get_schoolyear()
+        if self.schoolbegin <= datetime.today().date() <= self.schoolend:
+            self.isschoolyear = True
+        else:
+            self.isschoolyear = False
+
+        # Set grade term
+        self.set_gradeterm(term_index=self.gradetermindex)
+
         # Set class schedule
-        self.set_student_schedule()
+        self.set_student_schedule(term_index=self.gradetermindex)
+
+        # Set reporting period
+        self.set_reportingperiod(reportperiod_index=self.reportingperiodindex)
 
         # Set grades/assignments
-        self.set_student_grades()
-        self.set_student_assignments()
+        self.set_student_grades(reportperiod_index=self.reportingperiodindex)
+        self.set_student_assignments(reportperiod_index=self.reportingperiodindex)
         self.set_missing_assignments()
 
     def get_student_by_firstname(self, firstname):
@@ -137,6 +157,21 @@ class Student:
     def get_student_image(self, filename):
         return helpers.base64tofile(self._sv_student['photo']['$'], f'{filename}.png')
 
+    def set_gradeterm(self, term_index: int = None):
+        schedule = self._sv.get_schedule()['StudentClassSchedule']
+        if not term_index:
+            term_index = schedule['@TermIndex']
+        for term in schedule['TermLists']['TermListing']:
+            if term['@TermIndex'] == term_index:
+                self.gradetermindex = term['@TermIndex']
+                self.gradeterm = term['@TermCode']
+                self.gradetermname = term['@TermName']
+                return
+
+    def get_schoolyear(self):
+        return datetime.strptime(self._sv.get_calendar()['CalendarListing']['@SchoolBegDate'], date_format).date(), \
+               datetime.strptime(self._sv.get_calendar()['CalendarListing']['@SchoolEndDate'], date_format).date()
+
     def set_student_schedule(self, term_index: int = None):
         schedule = self._sv.get_schedule(term_index)['StudentClassSchedule']
         courses = []
@@ -147,7 +182,21 @@ class Student:
             courses.append(course_temp)
         self.schedule = courses
 
-    def set_student_grades(self, report_period: int = None, all_periods: bool = False):
+    def set_reportingperiod(self, reportperiod_index: int = None, reportperiod_name: str = None):
+        reporting_periods = self._sv.get_gradebook(reportperiod_index)['Gradebook']
+        if not reportperiod_name:
+            reportperiod_name = reporting_periods['ReportingPeriod']['@GradePeriod']
+        for period in reporting_periods['ReportingPeriods']['ReportPeriod']:
+            if period['@Index'] == reportperiod_index:
+                self.reportingperiodindex = period['@Index']
+                self.reportingperiodname = period['@GradePeriod']
+                return
+            elif period['@GradePeriod'] == reportperiod_name:
+                self.reportingperiodindex = period['@Index']
+                self.reportingperiodname = period['@GradePeriod']
+                return
+
+    def set_student_grades(self, reportperiod_index: int = None, all_periods: bool = False):
         #   If you specify a term report_period (1, 3, 5, 7) then grades can be found here:
         #       grades['Gradebook']['Courses']['Course'][0]['Marks']['Mark'][0]['Assignments']['Assignment']
         #   If you specify a progress report report_period (0, 2, 4, 6) then grades can be found here:
@@ -158,19 +207,16 @@ class Student:
         #   terms grades.  So if it's only term 2 currently it will say term 4 but will show the grades for term 2.
         if all_periods:
             grades = self._sv.get_gradebook(report_period=3)
-            self.gradeterm = grades['Gradebook']['ReportingPeriod']['@GradePeriod']
-            term2_grades = grades_to_list(grades, term=self.gradeterm)
+            term2_grades = grades_to_list(grades, term=self.gradetermname)
 
             grades = self._sv.get_gradebook(report_period=7)
-            self.gradeterm = grades['Gradebook']['ReportingPeriod']['@GradePeriod']
-            term4_grades = grades_to_list(grades, term=self.gradeterm)
+            term4_grades = grades_to_list(grades, term=self.gradetermname)
             self.grades = term2_grades + term4_grades
         else:
-            grades = self._sv.get_gradebook(report_period)
-            self.gradeterm = grades['Gradebook']['ReportingPeriod']['@GradePeriod']
-            self.grades = grades_to_list(grades, term=self.gradeterm)
+            grades = self._sv.get_gradebook(reportperiod_index)
+            self.grades = grades_to_list(grades, term=self.gradetermname)
 
-    def set_student_assignments(self, report_period: int = None, all_periods: bool = False):
+    def set_student_assignments(self, reportperiod_index: int = None, all_periods: bool = False):
         if all_periods:
             grades = self._sv.get_gradebook(report_period=3)
             self.assignmentterm = grades['Gradebook']['ReportingPeriod']['@GradePeriod']
@@ -181,7 +227,7 @@ class Student:
             term4_grades = parse_assignments(grades, term=self.assignmentterm)
             self.assignments = term2_grades + term4_grades
         else:
-            grades = self._sv.get_gradebook(report_period)
+            grades = self._sv.get_gradebook(reportperiod_index)
             self.assignmentterm = grades['Gradebook']['ReportingPeriod']['@GradePeriod']
             self.assignments = parse_assignments(grades, term=self.assignmentterm)
 
@@ -240,5 +286,5 @@ class Student:
         if notify and len(missing_assignments) > 0:
             body = helpers.convert_assignments_to_html(missing_assignments)
             helpers.send_notifications(f"{self.get_firstname()} has {missing_count}"
-                                       f" missing assignment(s)", body, self.agu)
+                                       f" missing assignment(s)", body, self.agu, self.isschoolyear)
         return missing_assignments

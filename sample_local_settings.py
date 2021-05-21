@@ -12,6 +12,7 @@ pushover_keys = ""
 pushover_priority = ""
 pushover_apitoken = ""
 email_enabled = True
+email_during_schoolyear = True
 email_from = "test@gmail.com"
 email_to = "janedoe@gmail.com,johndoe@gmail.com"
 email_ssl = False
