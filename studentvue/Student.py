@@ -293,7 +293,7 @@ class Student:
 
         # if notify and len(missing_assignments) > 0:
         if weekdays and not helpers.is_weekday():
-            logger.info('Notifications are restricted to weekdays only')
+            logger.debug('Notifications are restricted to weekdays only')
             notify = False
 
         if notify:
