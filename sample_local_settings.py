@@ -1,6 +1,9 @@
+logfile = "studentvue.log"
+loglevel = "INFO"
 username = "username"
 password = "password"
 domain = "synergy.crsk12.org"
+notify_weekday_only = True
 pushbullet_enabled = False
 pushbullet_apikey = ""
 pushbullet_deviceid = ""

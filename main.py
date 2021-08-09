@@ -1,6 +1,6 @@
 import local_settings
-from studentvue import StudentVue
-from studentvue import Student
+from studentvue import *
+# from studentvue import Student
 
 # Connect to StudentVUE/ParentVUE
 sv = StudentVue(local_settings.username, local_settings.password, local_settings.domain, parent=True)
@@ -9,9 +9,9 @@ sv = StudentVue(local_settings.username, local_settings.password, local_settings
 students = sv.get_student_list()['ChildList']['Child']
 
 for stu in students:
-    student = Student.Student(studentvue=sv, childintid=stu['@AccessGU'])
+    student = Student(studentvue=sv, childintid=stu['@AccessGU'])
     # student.get_missing_assignments(time='7d', notify=True)  # Specific time period
-    student.get_missing_assignments(notify=True)
+    student.get_missing_assignments(notify=True, weekdays=local_settings.notify_weekday_only)
 
 # New student instance (by first name instead of id)
 # student = Student.Student(studentvue=sv, firstname="Jonathan")

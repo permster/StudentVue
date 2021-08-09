@@ -1,8 +1,9 @@
-from studentvue import helpers
+from studentvue import helpers, logger
 from datetime import datetime
 
 
 date_format = "%m/%d/%Y"
+
 
 def assignments_to_dictionary(dic):
     return {'Date': dic['@Date'], 'DueDate': dic['@DueDate'],
@@ -73,7 +74,7 @@ class Student:
         self.schedule = self.grades = self.assignments = self._sv = None
         self.schooldistrict = self.assignments_missing = None
         self.gradeterm = self.gradetermname = None
-        self.reportingperiodname = None
+        self.reportingperiodname = self.assignmentterm = None
         self.schoolbegin = self.schoolend = self.isschoolyear = None
         self.gradetermindex = termindex
         self.reportingperiodindex = reportperiod
@@ -251,9 +252,11 @@ class Student:
         self.assignments_missing = missing_assignments
 
     def get_missing_assignments(self, classname: str = None, period: int = None,
-                                time: str = None, notify: bool = False):
+                                time: str = None, notify: bool = False, weekdays: bool = False):
         missing_assignments = []
         missing_count = 0
+        logger.info(f'Getting missing assignments for {self.get_firstname()}')
+
         for course in self.assignments_missing:
             # classname param found but class name is not a match
             if classname is not None and course['Classname'] != classname:
@@ -283,8 +286,18 @@ class Student:
                     'Assignments': missing_assignment
                 })
 
-        if notify and len(missing_assignments) > 0:
+        title = f'{self.get_firstname()} has {missing_count} missing assignment(s)'
+        logger.info(title)
+        if len(missing_assignments) > 0:
+            logger.info(missing_assignments)
+
+        # if notify and len(missing_assignments) > 0:
+        if weekdays and not helpers.is_weekday():
+            logger.info('Notifications are restricted to weekdays only')
+            notify = False
+
+        if notify:
             body = helpers.convert_assignments_to_html(missing_assignments)
-            helpers.send_notifications(f"{self.get_firstname()} has {missing_count}"
-                                       f" missing assignment(s)", body, self.agu, self.isschoolyear)
+            helpers.send_notifications(title, body, self.agu, self.isschoolyear)
+
         return missing_assignments

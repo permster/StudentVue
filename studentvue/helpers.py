@@ -145,3 +145,10 @@ def now_timedelta_to_date(time_val):
 
 def convert_string_to_date(date):
     return datetime.strptime(date, '%m/%d/%Y')
+
+
+def is_weekday():
+    if datetime.today().weekday() < 5:
+        return True
+    else:
+        return False

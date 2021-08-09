@@ -8,7 +8,7 @@ from email.mime.multipart import MIMEMultipart
 from urllib.request import urlopen, Request
 from urllib.parse import urlencode, quote_plus
 
-logger.initLogger()
+logger.initLogger(logfile=local_settings.logfile, loglevel=local_settings.loglevel)
 
 
 class PUSHBULLET(object):
