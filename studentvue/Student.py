@@ -74,8 +74,8 @@ class Student:
         self.schedule = self.grades = self.assignments = self._sv = None
         self.schooldistrict = self.assignments_missing = None
         self.gradeterm = self.gradetermname = None
-        self.reportingperiodname = self.assignmentterm = None
-        self.schoolbegin = self.schoolend = self.isschoolyear = None
+        self.reportingperiodname = self.assignmentterm = self.isreportingperiod = None
+        self.schoolbegin = self.schoolend = self.isschoolyear = self.isschoolholiday = None
         self.gradetermindex = termindex
         self.reportingperiodindex = reportperiod
 
@@ -102,12 +102,13 @@ class Student:
         # Set child id for later calls to StudentVue
         self._sv.switch_student(self.agu)
 
-        # Set school year dates
+        # Set school year dates and holidays
         self.schoolbegin, self.schoolend = self.get_schoolyear()
         if self.schoolbegin <= datetime.today().date() <= self.schoolend:
             self.isschoolyear = True
         else:
             self.isschoolyear = False
+        self.set_school_holiday()
 
         # Set grade term
         self.set_gradeterm(term_index=self.gradetermindex)
@@ -173,6 +174,12 @@ class Student:
         return datetime.strptime(self._sv.get_calendar()['CalendarListing']['@SchoolBegDate'], date_format).date(), \
                datetime.strptime(self._sv.get_calendar()['CalendarListing']['@SchoolEndDate'], date_format).date()
 
+    def set_school_holiday(self):
+        events = self._sv.get_calendar()['CalendarListing']['EventLists']['EventList']
+        for event in events:
+            if event['@Date'] == datetime.today().strftime("%m/%d/%Y") and event['@DayType'] == 'Holiday':
+                self.isschoolholiday = True
+
     def set_student_schedule(self, term_index: int = None):
         schedule = self._sv.get_schedule(term_index)['StudentClassSchedule']
         courses = []
@@ -185,17 +192,34 @@ class Student:
 
     def set_reportingperiod(self, reportperiod_index: int = None, reportperiod_name: str = None):
         reporting_periods = self._sv.get_gradebook(reportperiod_index)['Gradebook']
-        if not reportperiod_name:
-            reportperiod_name = reporting_periods['ReportingPeriod']['@GradePeriod']
-        for period in reporting_periods['ReportingPeriods']['ReportPeriod']:
-            if period['@Index'] == reportperiod_index:
-                self.reportingperiodindex = period['@Index']
-                self.reportingperiodname = period['@GradePeriod']
-                return
-            elif period['@GradePeriod'] == reportperiod_name:
-                self.reportingperiodindex = period['@Index']
-                self.reportingperiodname = period['@GradePeriod']
-                return
+        period = reporting_periods['ReportingPeriod']
+        period_index = period['@Index']
+        period_name = period['@GradePeriod']
+        period_startdate = datetime.strptime(period['@StartDate'], date_format).date()
+        period_enddate = datetime.strptime(period['@EndDate'], date_format).date()
+
+        if reportperiod_index is not None or reportperiod_name is not None:
+            for period in reporting_periods['ReportingPeriods']['ReportPeriod']:
+                period_index = period['@Index']
+                period_name = period['@GradePeriod']
+                period_startdate = datetime.strptime(period['@StartDate'], date_format).date()
+                period_enddate = datetime.strptime(period['@EndDate'], date_format).date()
+
+                # Try to match period index first otherwise match period name
+                if period['@Index'] == reportperiod_index:
+                    break
+                elif period['@GradePeriod'] == reportperiod_name:
+                    break
+
+        # Set reporting period properties
+        self.reportingperiodindex = period_index
+        self.reportingperiodname = period_name
+
+        # Set property to true if in a reporting period
+        if period_startdate <= datetime.today().date() <= period_enddate:
+            self.isreportingperiod = True
+        else:
+            self.isreportingperiod = False
 
     def set_student_grades(self, reportperiod_index: int = None, all_periods: bool = False):
         #   If you specify a term report_period (1, 3, 5, 7) then grades can be found here:
@@ -252,7 +276,8 @@ class Student:
         self.assignments_missing = missing_assignments
 
     def get_missing_assignments(self, classname: str = None, period: int = None,
-                                time: str = None, notify: bool = False, weekdays: bool = False):
+                                time: str = None, notify: bool = False, notify_weekdays: bool = False,
+                                notify_holidays: bool = False, notify_reportperiod: bool = False):
         missing_assignments = []
         missing_count = 0
         logger.info(f'Getting missing assignments for {self.get_firstname()}')
@@ -291,9 +316,19 @@ class Student:
         if len(missing_assignments) > 0:
             logger.info(missing_assignments)
 
-        # if notify and len(missing_assignments) > 0:
-        if weekdays and not helpers.is_weekday():
+        # Only notify on weekdays
+        if notify_weekdays and not helpers.is_weekday():
             logger.debug('Notifications are restricted to weekdays only')
+            notify = False
+
+        # Only notify on non-holidays
+        if not notify_holidays and self.isschoolholiday:
+            logger.debug('Notifications are restricted on holidays')
+            notify = False
+
+        # Only notify during reporting period
+        if notify_reportperiod and not self.isreportingperiod:
+            logger.debug('Notifications are restricted to during the reporting period only')
             notify = False
 
         if notify:
