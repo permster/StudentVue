@@ -193,7 +193,7 @@ class Student:
     def set_reportingperiod(self, reportperiod_index: int = None, reportperiod_name: str = None):
         reporting_periods = self._sv.get_gradebook(reportperiod_index)['Gradebook']
         period = reporting_periods['ReportingPeriod']
-        period_index = period['@Index']
+        period_index = None
         period_name = period['@GradePeriod']
         period_startdate = datetime.strptime(period['@StartDate'], date_format).date()
         period_enddate = datetime.strptime(period['@EndDate'], date_format).date()
