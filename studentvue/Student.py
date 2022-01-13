@@ -21,6 +21,10 @@ def parse_assignments(grades, term):
     for grade in gradebook:
         grade_temp = {'Period': grade['@Period'], 'Classname': grade['@Title'], 'Assignments': []}
 
+        if len(grade['Marks']) == 0:
+            # No grades for course
+            continue
+
         marks = grade['Marks']['Mark']
         if isinstance(marks, dict):
             # Progress report
@@ -49,6 +53,10 @@ def grades_to_list(grades, term):
     gradebook = grades['Gradebook']['Courses']['Course']
     grades_temp = []
     for grade in gradebook:
+        if len(grade['Marks']) == 0:
+            # No grades for course
+            continue
+
         marks = grade['Marks']['Mark']
         if isinstance(marks, dict):
             # Progress report
