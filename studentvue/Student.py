@@ -2,9 +2,6 @@ from studentvue import helpers, logger
 from datetime import datetime
 
 
-date_format = "%m/%d/%Y"
-
-
 def assignments_to_dictionary(dic):
     return {'Date': dic['@Date'], 'DueDate': dic['@DueDate'],
             'Measure': dic['@Measure'], 'Type': dic['@Type'],
@@ -81,8 +78,9 @@ class Student:
         self.studentdict = self.firstname = self.fullname = None
         self.schedule = self.grades = self.assignments = self._sv = None
         self.schooldistrict = self.assignments_missing = None
-        self.gradeterm = self.gradetermname = None
+        self.gradeterm = self.gradetermname = gradetermstart = gradetermend = None
         self.reportingperiodname = self.assignmentterm = self.isreportingperiod = None
+        self.reportingperiodstart = self.reportingperiodend = None
         self.schoolbegin = self.schoolend = self.isschoolyear = self.isschoolholiday = None
         self.gradetermindex = termindex
         self.reportingperiodindex = reportperiod
@@ -176,11 +174,13 @@ class Student:
                 self.gradetermindex = term['@TermIndex']
                 self.gradeterm = term['@TermCode']
                 self.gradetermname = term['@TermName']
+                self.gradetermstart = helpers.convert_string_to_date(term['@BeginDate'])
+                self.gradetermend = helpers.convert_string_to_date(term['@EndDate'])
                 return
 
     def get_schoolyear(self):
-        return datetime.strptime(self._sv.get_calendar()['CalendarListing']['@SchoolBegDate'], date_format).date(), \
-               datetime.strptime(self._sv.get_calendar()['CalendarListing']['@SchoolEndDate'], date_format).date()
+        return helpers.convert_string_to_date(self._sv.get_calendar()['CalendarListing']['@SchoolBegDate']), \
+               helpers.convert_string_to_date(self._sv.get_calendar()['CalendarListing']['@SchoolEndDate'])
 
     def set_school_holiday(self):
         events = self._sv.get_calendar()['CalendarListing']['EventLists']['EventList']
@@ -201,17 +201,20 @@ class Student:
     def set_reportingperiod(self, reportperiod_index: int = None, reportperiod_name: str = None):
         reporting_periods = self._sv.get_gradebook(reportperiod_index)['Gradebook']
         period = reporting_periods['ReportingPeriod']
-        period_index = None
         period_name = period['@GradePeriod']
-        period_startdate = datetime.strptime(period['@StartDate'], date_format).date()
-        period_enddate = datetime.strptime(period['@EndDate'], date_format).date()
+        for period_temp in reporting_periods['ReportingPeriods']['ReportPeriod']:
+            if period_temp['@GradePeriod'] == period_name:
+                period_index = period_temp['@Index']
+                break
+        period_startdate = helpers.convert_string_to_date(period['@StartDate'])
+        period_enddate = helpers.convert_string_to_date(period['@EndDate'])
 
         if reportperiod_index is not None or reportperiod_name is not None:
             for period in reporting_periods['ReportingPeriods']['ReportPeriod']:
                 period_index = period['@Index']
                 period_name = period['@GradePeriod']
-                period_startdate = datetime.strptime(period['@StartDate'], date_format).date()
-                period_enddate = datetime.strptime(period['@EndDate'], date_format).date()
+                period_startdate = helpers.convert_string_to_date(period['@StartDate'])
+                period_enddate = helpers.convert_string_to_date(period['@EndDate'])
 
                 # Try to match period index first otherwise match period name
                 if period['@Index'] == reportperiod_index:
@@ -222,6 +225,8 @@ class Student:
         # Set reporting period properties
         self.reportingperiodindex = period_index
         self.reportingperiodname = period_name
+        self.reportingperiodstart = period_startdate
+        self.reportingperiodend = period_enddate
 
         # Set property to true if in a reporting period
         if period_startdate <= datetime.today().date() <= period_enddate:
@@ -284,7 +289,8 @@ class Student:
         self.assignments_missing = missing_assignments
 
     def get_missing_assignments(self, classname: str = None, period: int = None,
-                                time: str = None, notify: bool = False, notify_weekdays: bool = False,
+                                time: str = None, term_filter: bool = False,
+                                notify: bool = False, notify_weekdays: bool = False,
                                 notify_holidays: bool = False, notify_reportperiod: bool = False):
         missing_assignments = []
         missing_count = 0
@@ -299,18 +305,26 @@ class Student:
             if period is not None and course['Period'] != period:
                 continue
 
+            # filter out assignments
             missing_assignment = []
             for assignment in course['Assignments']:
                 if time:
                     # do time comparison here
                     assignment_date = helpers.convert_string_to_date(assignment['Date'])
                     date_cutoff = helpers.now_timedelta_to_date(time)
-                    if assignment_date >= date_cutoff:
-                        missing_assignment.append(assignment)
-                        missing_count += 1
-                else:
-                    missing_assignment.append(assignment)
-                    missing_count += 1
+                    if assignment_date < date_cutoff:
+                        # time cutoff not met
+                        continue
+
+                if term_filter:
+                    assignment_date = helpers.convert_string_to_date(assignment['Date'])
+                    if self.gradetermstart <= assignment_date <= self.gradetermend:
+                        pass
+                    else:
+                        continue
+
+                missing_assignment.append(assignment)
+                missing_count += 1
 
             if len(missing_assignment) > 0:
                 missing_assignments.append({

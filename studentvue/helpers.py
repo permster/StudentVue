@@ -140,11 +140,11 @@ def convert_to_timedelta(time_val):
 
 
 def now_timedelta_to_date(time_val):
-    return datetime.now() - convert_to_timedelta(time_val)
+    return (datetime.now() - convert_to_timedelta(time_val)).date()
 
 
 def convert_string_to_date(date):
-    return datetime.strptime(date, '%m/%d/%Y')
+    return datetime.strptime(date, '%m/%d/%Y').date()
 
 
 def is_weekday():

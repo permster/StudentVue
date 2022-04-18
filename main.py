@@ -11,7 +11,8 @@ students = sv.get_student_list()['ChildList']['Child']
 for stu in students:
     student = Student(studentvue=sv, childintid=stu['@AccessGU'])
     # student.get_missing_assignments(time='7d', notify=True)  # Specific time period
-    student.get_missing_assignments(notify=True,
+    student.get_missing_assignments(term_filter=True,
+                                    notify=True,
                                     notify_weekdays=local_settings.notify_weekday_only,
                                     notify_reportperiod=local_settings.notify_reportperiod_only)
 
@@ -22,4 +23,7 @@ for stu in students:
 # missing_all = student.get_missing_assignments()  # All
 # missing_by_class = student.get_missing_assignments(classname='Photo I (15400)')  # Specific class
 # missing_by_period = student.get_missing_assignments(period=1)  # Specific period
-# missing_last_week = student.get_missing_assignments(time='7d', notify=True)  # Specific time period
+# missing_last_week = student.get_missing_assignments(time='7d', notify=True)  # Specific time period (last 7 days)
+
+# Filter by reporting period (default to current reporting period unless specified in Student() instance above)
+# missing_report_period = student.get_missing_assignments(term_filter=True, notify=True)
