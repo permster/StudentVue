@@ -184,8 +184,12 @@ class Student:
 
     def set_school_holiday(self):
         events = self._sv.get_calendar()['CalendarListing']['EventLists']['EventList']
-        for event in events:
-            if event['@Date'] == datetime.today().strftime("%m/%d/%Y") and event['@DayType'] == 'Holiday':
+        if isinstance(events, list):
+            for event in events:
+                if event['@Date'] == datetime.today().strftime("%m/%d/%Y") and event['@DayType'] == 'Holiday':
+                    self.isschoolholiday = True
+        else:
+            if events['@Date'] == datetime.today().strftime("%m/%d/%Y") and events['@DayType'] == 'Holiday':
                 self.isschoolholiday = True
 
     def set_student_schedule(self, term_index: int = None):
