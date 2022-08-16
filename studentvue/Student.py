@@ -16,13 +16,22 @@ def parse_assignments(grades, term):
     gradebook = grades['Gradebook']['Courses']['Course']
     assignments_temp = []
     for grade in gradebook:
-        grade_temp = {'Period': grade['@Period'], 'Classname': grade['@Title'], 'Assignments': []}
+        if isinstance(grade, dict):
+            if len(grade['Marks']) == 0:
+                # No grades for course
+                continue
 
-        if len(grade['Marks']) == 0:
-            # No grades for course
-            continue
+            grade_temp = {'Period': grade['@Period'], 'Classname': grade['@Title'], 'Assignments': []}
+            marks = grade['Marks']['Mark']
+        else:
+            if len(gradebook['Marks']) == 0:
+                # No grades for course
+                continue
 
-        marks = grade['Marks']['Mark']
+            grade_temp = {'Period': gradebook['@Period'], 'Classname': gradebook['@Title'], 'Assignments': []}
+            marks = gradebook['Marks']['Mark']
+
+        # marks = grade['Marks']['Mark']
         if isinstance(marks, dict):
             # Progress report
             if len(marks['Assignments']) > 0:
@@ -50,21 +59,34 @@ def grades_to_list(grades, term):
     gradebook = grades['Gradebook']['Courses']['Course']
     grades_temp = []
     for grade in gradebook:
-        if len(grade['Marks']) == 0:
-            # No grades for course
-            continue
+        if isinstance(grade, dict):
+            if len(grade['Marks']) == 0:
+                # No grades for course
+                continue
 
-        marks = grade['Marks']['Mark']
+            marks = grade['Marks']['Mark']
+            period = grade['@Period']
+            classname = grade['@Title']
+        else:
+            if len(gradebook['Marks']) == 0:
+                # No grades for course
+                continue
+
+            marks = gradebook['Marks']['Mark']
+            period = gradebook['@Period']
+            classname = gradebook['@Title']
+
+        # marks = grade['Marks']['Mark']
         if isinstance(marks, dict):
             # Progress report
-            grades_temp.append({'Period': grade['@Period'], 'Classname': grade['@Title'],
+            grades_temp.append({'Period': period, 'Classname': classname,
                                 'Grade': marks['@CalculatedScoreString'],
                                 'Score': marks['@CalculatedScoreRaw']})
         else:
             # Term
             for mark in marks:
                 if mark['@MarkName'] == term:
-                    grades_temp.append({'Period': grade['@Period'], 'Classname': grade['@Title'],
+                    grades_temp.append({'Period': period, 'Classname': classname,
                                         'Grade': mark['@CalculatedScoreString'],
                                         'Score': mark['@CalculatedScoreRaw']})
                     break
