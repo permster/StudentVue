@@ -33,7 +33,7 @@ The API data is in XML format, so the data is automatically transformed into jso
 - **missing_assignment_cutoff:** Date cutoff for missing assignments
   - "30d" = Show the last 30 days of missing assignments
   - "6M" = Show the last 6 months of missing assignments
-  - "09/01/2022" = Don't show missing assignment older than the date specified
+  - "09/01/2022" = Don't show missing assignments older than the date specified
 - **notify_weekday_only:** Notifications on weekdays only
 - **notify_on_holidays:** Notifications on holidays
 - **notify_reportperiod_only:** Notifications during a reporting period only
