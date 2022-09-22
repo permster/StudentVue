@@ -6,10 +6,11 @@ from dateutil.relativedelta import relativedelta
 
 
 def send_notifications(title, message, agu, isschoolyear: bool = False):
+    if local_settings.notify_schoolyear_only and not isschoolyear:
+        logger.info(u"Notification is only enabled during the schoolyear")
+        return
+
     if local_settings.email_enabled:
-        if local_settings.email_during_schoolyear and not isschoolyear:
-            logger.info(u"Email is only enabled during the schoolyear")
-            return
         logger.info(u"Sending Email notification")
         email_to = local_settings.email_to
         if local_settings.email_child:
