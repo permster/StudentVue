@@ -3,6 +3,7 @@ loglevel = "INFO"
 username = "username"
 password = "password"
 domain = "synergy.crsk12.org"
+missing_assignment_cutoff = "09/01/2022"
 notify_weekday_only = True
 notify_on_holidays = False
 notify_reportperiod_only = True

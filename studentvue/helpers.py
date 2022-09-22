@@ -101,29 +101,16 @@ def convert_to_timedelta(time_val):
     =========   ======= ===================
     Character   Meaning Example
     =========   ======= ===================
-    s           Seconds '60s' -> 60 Seconds
-    m           Minutes '5m'  -> 5 Minutes
-    h           Hours   '24h' -> 24 Hours
-    d           Days    '7d'  -> 7 Days
-    w           Weeks   '2w'  -> 2 Weeks
-    M           Months   '2M'  -> 2 Months
+    s           Seconds '60s' -> 60 Second(s)
+    m           Minutes '5m'  -> 5 Minute(s)
+    h           Hours   '24h' -> 24 Hour(s)
+    d           Days    '7d'  -> 7 Day(s)
+    w           Weeks   '2w'  -> 2 Week(s)
+    M           Months  '2M'  -> 2 Month(s)
+    Y           Years   '1y'  -> 1 Year(s)
     =========   ======= ===================
-
-    Examples::
-
-        >>> convert_to_timedelta('2M')
-        datetime.timedelta(61)
-        >>> convert_to_timedelta('3w')
-        datetime.timedelta(21)
-        >>> convert_to_timedelta('7d')
-        datetime.timedelta(7)
-        >>> convert_to_timedelta('24h')
-        datetime.timedelta(1)
-        >>> convert_to_timedelta('60m')
-        datetime.timedelta(0, 3600)
-        >>> convert_to_timedelta('120s')
-        datetime.timedelta(0, 120)
     """
+
     num = int(time_val[:-1])
     if time_val.endswith('s'):
         return timedelta(seconds=num)
@@ -137,10 +124,17 @@ def convert_to_timedelta(time_val):
         return timedelta(weeks=num)
     elif time_val.endswith('M'):
         return relativedelta(months=num)
+    elif time_val.endswith('y') or time_val.endswith('Y'):
+        return relativedelta(years=num)
 
 
 def now_timedelta_to_date(time_val):
     return (datetime.now() - convert_to_timedelta(time_val)).date()
+
+
+def is_timedelta_date(time_val):
+    suffix_list = ['s', 'm', 'h', 'd', 'w', 'M', 'y', 'Y']
+    return time_val.endswith(tuple(suffix_list))
 
 
 def convert_string_to_date(date):

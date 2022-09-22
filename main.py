@@ -10,8 +10,9 @@ students = sv.get_student_list()['ChildList']['Child']
 
 for stu in students:
     student = Student(studentvue=sv, childintid=stu['@AccessGU'])
-    # student.get_missing_assignments(time='7d', notify=True)  # Specific time period
-    student.get_missing_assignments(term_filter=True,
+    # student.get_missing_assignments(date_cutoff='7d', notify=True)  # Specific time delta from now
+    # student.get_missing_assignments(date_cutoff=local_settings.missing_assignment_cutoff, notify=True)  # Date cutoff
+    student.get_missing_assignments(gradeterm_filter=True,
                                     notify=True,
                                     notify_weekdays=local_settings.notify_weekday_only,
                                     notify_reportperiod=local_settings.notify_reportperiod_only)

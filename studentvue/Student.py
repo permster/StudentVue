@@ -100,7 +100,7 @@ class Student:
         self.studentdict = self.firstname = self.fullname = None
         self.schedule = self.grades = self.assignments = self._sv = None
         self.schooldistrict = self.assignments_missing = None
-        self.gradeterm = self.gradetermname = gradetermstart = gradetermend = None
+        self.gradeterm = self.gradetermname = self.gradetermstart = self.gradetermend = None
         self.reportingperiodname = self.assignmentterm = self.isreportingperiod = None
         self.reportingperiodstart = self.reportingperiodend = None
         self.schoolbegin = self.schoolend = self.isschoolyear = self.isschoolholiday = None
@@ -225,6 +225,7 @@ class Student:
         self.schedule = courses
 
     def set_reportingperiod(self, reportperiod_index: int = None, reportperiod_name: str = None):
+        period_index = None
         reporting_periods = self._sv.get_gradebook(reportperiod_index)['Gradebook']
         period = reporting_periods['ReportingPeriod']
         period_name = period['@GradePeriod']
@@ -315,7 +316,8 @@ class Student:
         self.assignments_missing = missing_assignments
 
     def get_missing_assignments(self, classname: str = None, period: int = None,
-                                time: str = None, term_filter: bool = False,
+                                date_cutoff: str = None, gradeterm_filter: bool = False,
+                                reportperiod_filter: bool = False,
                                 notify: bool = False, notify_weekdays: bool = False,
                                 notify_holidays: bool = False, notify_reportperiod: bool = False):
         missing_assignments = []
@@ -334,17 +336,26 @@ class Student:
             # filter out assignments
             missing_assignment = []
             for assignment in course['Assignments']:
-                if time:
-                    # do time comparison here
-                    assignment_date = helpers.convert_string_to_date(assignment['Date'])
-                    date_cutoff = helpers.now_timedelta_to_date(time)
-                    if assignment_date < date_cutoff:
-                        # time cutoff not met
+                assignment_date = helpers.convert_string_to_date(assignment['Date'])
+
+                if date_cutoff:
+                    # do date comparison here
+                    if helpers.is_timedelta_date(date_cutoff):
+                        date_compare = helpers.now_timedelta_to_date(date_cutoff)
+                    else:
+                        date_compare = helpers.convert_string_to_date(date_cutoff)
+                    if assignment_date < date_compare:
+                        # date cutoff not met
                         continue
 
-                if term_filter:
-                    assignment_date = helpers.convert_string_to_date(assignment['Date'])
+                if gradeterm_filter:
                     if self.gradetermstart <= assignment_date <= self.gradetermend:
+                        pass
+                    else:
+                        continue
+
+                if reportperiod_filter:
+                    if self.reportingperiodstart <= assignment_date <= self.reportingperiodend:
                         pass
                     else:
                         continue
