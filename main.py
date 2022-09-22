@@ -24,7 +24,8 @@ for stu in students:
 # missing_all = student.get_missing_assignments()  # All
 # missing_by_class = student.get_missing_assignments(classname='Photo I (15400)')  # Specific class
 # missing_by_period = student.get_missing_assignments(period=1)  # Specific period
-# missing_last_week = student.get_missing_assignments(time='7d', notify=True)  # Specific time period (last 7 days)
+# missing_last_week = student.get_missing_assignments(
+#     date_cutoff='7d', notify=True)  # Specific time period (last 7 days)
 
 # Filter by reporting period (default to current reporting period unless specified in Student() instance above)
-# missing_report_period = student.get_missing_assignments(term_filter=True, notify=True)
+# missing_report_period = student.get_missing_assignments(gradeterm_filter=True, notify=True)
