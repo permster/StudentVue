@@ -12,46 +12,57 @@ def assignments_to_dictionary(dic):
             'DropEndDate': dic['@DropEndDate']}
 
 
-def parse_assignments(grades, term):
-    gradebook = grades['Gradebook']['Courses']['Course']
-    assignments_temp = []
-    for grade in gradebook:
-        if isinstance(grade, dict):
-            if len(grade['Marks']) == 0:
-                # No grades for course
-                continue
+def get_assignment_marks(grade, term):
+    grade_temp = None
+    if isinstance(grade, dict):
+        if len(grade['Marks']) == 0:
+            # No grades for course
+            return
 
-            grade_temp = {'Period': grade['@Period'], 'Classname': grade['@Title'], 'Assignments': []}
-            marks = grade['Marks']['Mark']
-        else:
-            if len(gradebook['Marks']) == 0:
-                # No grades for course
-                continue
+        grade_temp = {'Period': grade['@Period'], 'Classname': grade['@Title'], 'Assignments': []}
+        marks = grade['Marks']['Mark']
+    else:
+        # Unexpected format
+        return
 
-            grade_temp = {'Period': gradebook['@Period'], 'Classname': gradebook['@Title'], 'Assignments': []}
-            marks = gradebook['Marks']['Mark']
-
-        # marks = grade['Marks']['Mark']
-        if isinstance(marks, dict):
-            # Progress report
-            if len(marks['Assignments']) > 0:
-                assignments = marks['Assignments']['Assignment']
+    # marks = grade['Marks']['Mark']
+    if isinstance(marks, dict):
+        # Progress report
+        if len(marks['Assignments']) > 0:
+            assignments = marks['Assignments']['Assignment']
+            if isinstance(assignments, dict):  # Workaround for xmltojson conversion issue (single element)
+                grade_temp['Assignments'].append(assignments_to_dictionary(assignments))
+            else:
+                for assignment in assignments:
+                    grade_temp['Assignments'].append(assignments_to_dictionary(assignment))
+    else:
+        # Term
+        for mark in marks:
+            if mark['@MarkName'] == term and len(mark['Assignments']) > 0:
+                assignments = mark['Assignments']['Assignment']
                 if isinstance(assignments, dict):  # Workaround for xmltojson conversion issue (single element)
                     grade_temp['Assignments'].append(assignments_to_dictionary(assignments))
                 else:
                     for assignment in assignments:
                         grade_temp['Assignments'].append(assignments_to_dictionary(assignment))
-        else:
-            # Term
-            for mark in marks:
-                if mark['@MarkName'] == term and len(mark['Assignments']) > 0:
-                    assignments = mark['Assignments']['Assignment']
-                    if isinstance(assignments, dict):  # Workaround for xmltojson conversion issue (single element)
-                        grade_temp['Assignments'].append(assignments_to_dictionary(assignments))
-                    else:
-                        for assignment in assignments:
-                            grade_temp['Assignments'].append(assignments_to_dictionary(assignment))
-        assignments_temp.append(grade_temp)
+
+    return grade_temp
+
+
+def parse_assignments(grades, term):
+    gradebook = grades['Gradebook']['Courses']['Course']
+    assignments_temp = []
+
+    if isinstance(gradebook, dict):
+        grade_temp = get_assignment_marks(gradebook, term)
+        if grade_temp:
+            assignments_temp.append(grade_temp)
+    else:
+        for grade in gradebook:
+            grade_temp = get_assignment_marks(grade, term)
+            if grade_temp:
+                assignments_temp.append(grade_temp)
+
     return assignments_temp
 
 
