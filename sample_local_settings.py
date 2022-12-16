@@ -4,6 +4,11 @@ username = "username"
 password = "password"
 domain = "synergy.crsk12.org"
 missing_assignment_cutoff = "09/01/2022"
+missing_assignment_cutoff_by_class = {
+    "Earth/Space Science (12280)": "10/15/2022",
+    "Environmental Science (12600)": "10/15/2022",
+    "AZ/US History (13300)": "11/05/2022"
+}
 notify_weekday_only = True
 notify_on_holidays = False
 notify_reportperiod_only = True

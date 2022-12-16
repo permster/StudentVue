@@ -213,7 +213,7 @@ class Student:
 
     def get_schoolyear(self):
         return helpers.convert_string_to_date(self._sv.get_calendar()['CalendarListing']['@SchoolBegDate']), \
-               helpers.convert_string_to_date(self._sv.get_calendar()['CalendarListing']['@SchoolEndDate'])
+            helpers.convert_string_to_date(self._sv.get_calendar()['CalendarListing']['@SchoolEndDate'])
 
     def set_school_holiday(self):
         events = self._sv.get_calendar()['CalendarListing']['EventLists']['EventList']
@@ -328,7 +328,7 @@ class Student:
 
     def get_missing_assignments(self, classname: str = None, period: int = None,
                                 date_cutoff: str = None, gradeterm_filter: bool = False,
-                                reportperiod_filter: bool = False,
+                                date_cutoff_by_class: dict = None, reportperiod_filter: bool = False,
                                 notify: bool = False, notify_weekdays: bool = False,
                                 notify_holidays: bool = False, notify_reportperiod: bool = False):
         missing_assignments = []
@@ -358,6 +358,22 @@ class Student:
                     if assignment_date < date_compare:
                         # date cutoff not met
                         continue
+
+                if date_cutoff_by_class:
+                    class_date_cutoff = [value for key, value in date_cutoff_by_class.items()
+                                         if course['Classname'] in key]
+
+                    # do date comparison for each class in the dictionary
+                    if len(class_date_cutoff) > 0:
+                        # do date comparison here
+                        if helpers.is_timedelta_date(class_date_cutoff[0]):
+                            date_compare = helpers.now_timedelta_to_date(class_date_cutoff[0])
+                        else:
+                            date_compare = helpers.convert_string_to_date(class_date_cutoff[0])
+
+                        if assignment_date < date_compare:
+                            # date cutoff not met
+                            continue
 
                 if gradeterm_filter:
                     if self.gradetermstart <= assignment_date <= self.gradetermend:
