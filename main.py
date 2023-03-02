@@ -16,7 +16,7 @@ for stu in students:
     #                                 notify=True)  # Date cutoff by class
 
     student.get_missing_assignments(gradeterm_filter=True,
-                                    date_cutoff_by_class=local_settings.missing_assignment_cutoff_by_class,
+                                    reportperiod_filter=True,
                                     notify=True,
                                     notify_weekdays=local_settings.notify_weekday_only,
                                     notify_reportperiod=local_settings.notify_reportperiod_only)
