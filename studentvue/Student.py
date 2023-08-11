@@ -168,6 +168,8 @@ class Student:
 
     def get_student_by_firstname(self, firstname):
         studentlist = self._sv.get_student_list()['ChildList']['Child']
+        if not isinstance(studentlist, list):
+            studentlist = [studentlist]
         for student in studentlist:
             for key, value in student.items():
                 if key == '@ChildFirstName' and value == firstname:
@@ -179,7 +181,6 @@ class Student:
         # documents = self._sv.list_documents()
         studentlist = self._sv.get_student_list()['ChildList']['Child']
         if not isinstance(studentlist, list):
-            # students = OrderedDict([('1', students)])
             studentlist = [studentlist]
         for student in studentlist:
             for key, value in student.items():
