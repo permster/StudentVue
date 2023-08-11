@@ -7,6 +7,8 @@ sv = StudentVue(local_settings.username, local_settings.password, local_settings
 
 # List students
 students = sv.get_student_list()['ChildList']['Child']
+if not isinstance(students, list):
+    students = [students]
 
 for stu in students:
     student = Student(studentvue=sv, childintid=stu['@AccessGU'])

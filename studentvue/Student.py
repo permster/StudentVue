@@ -155,6 +155,9 @@ class Student:
         # Set class schedule
         self.set_student_schedule(term_index=self.gradetermindex)
 
+        # Set attendance
+        self.set_student_attendance()
+
         # Set reporting period
         self.set_reportingperiod(reportperiod_index=self.reportingperiodindex)
 
@@ -171,7 +174,13 @@ class Student:
                     return student
 
     def get_student_by_id(self, childid):
+        # studentinfo = self._sv.get_student_info()
+        # classnotes = self._sv.get_class_notes()
+        # documents = self._sv.list_documents()
         studentlist = self._sv.get_student_list()['ChildList']['Child']
+        if not isinstance(studentlist, list):
+            # students = OrderedDict([('1', students)])
+            studentlist = [studentlist]
         for student in studentlist:
             for key, value in student.items():
                 if key == '@AccessGU' and value == childid:
@@ -234,6 +243,10 @@ class Student:
                            'TeacherEmail': course['@TeacherEmail']}
             courses.append(course_temp)
         self.schedule = courses
+
+    def set_student_attendance(self):
+        attendance = self._sv.get_attendance()
+        pass
 
     def set_reportingperiod(self, reportperiod_index: int = None, reportperiod_name: str = None):
         period_index = None
@@ -375,14 +388,15 @@ class Student:
                             # date cutoff not met
                             continue
 
-                if gradeterm_filter:
-                    if self.gradetermstart <= assignment_date <= self.gradetermend:
+                if reportperiod_filter:
+                    # report period filter is more specific, when both report period filter and grade term filters
+                    # are enabled, only filter on report period
+                    if self.reportingperiodstart <= assignment_date <= self.reportingperiodend:
                         pass
                     else:
                         continue
-
-                if reportperiod_filter:
-                    if self.reportingperiodstart <= assignment_date <= self.reportingperiodend:
+                elif gradeterm_filter:
+                    if self.gradetermstart <= assignment_date <= self.gradetermend:
                         pass
                     else:
                         continue
